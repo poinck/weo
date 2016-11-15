@@ -1,0 +1,108 @@
+#!/usr/bin/python3
+#
+# weo-0.0.1:
+# this first version of weo (watch episode of) can just read the
+# "Tagesschau 20 Uhr (HD)"-feed
+#
+# TODO:
+# - get feeds and their attributes (expected date and time) from a feeds-file
+# - get player configuration from file
+#
+# by André Klausnitzer, no license
+
+import feedparser
+
+import os
+import sys
+import time
+import datetime
+import argparse
+import configparser
+from subprocess import call
+
+DEBUG = False
+
+# default player
+PLAYER = "mplayer"
+
+
+def get_arguments():
+    global DEBUG
+
+    # parse commandline arguments
+    parser = argparse.ArgumentParser(description="weo - watch episode of")
+    parser.add_argument('-v', '--verbose', help='enable debugging', action='count')
+
+    args = vars(parser.parse_args())
+
+    if args["verbose"] is not None:
+        if args["verbose"] > 0:
+            DEBUG = True
+
+
+def play(url):
+    if DEBUG:
+        print("url = " + url)
+
+    call([PLAYER, url])
+
+
+def play_tagesschau():
+    play_now = False
+
+    feed_url = "http://www.tagesschau.de/export/video-podcast/webxl/tagesschau/"
+    expected_date = datetime.datetime.today()
+
+    feed = feedparser.parse(feed_url)
+
+    feed_title = feed['channel']['title']
+    if DEBUG:
+        print("title = " + feed_title)
+
+    current_item = feed['items'][0]
+    publish_date = current_item['published_parsed']
+
+    # check wether last episode is from today
+    if expected_date.year == publish_date.tm_year \
+    and expected_date.month == publish_date.tm_mon \
+    and expected_date.day == publish_date.tm_mday:
+        print("last episode is from today, playing now ..")
+        play_now = True
+    else:
+        print("last episode is from " + str(publish_date.tm_mday) + "." + str(publish_date.tm_mon) + "." + str(publish_date.tm_year))
+
+    item_video_link = current_item['links'][0]['href']
+    if DEBUG:
+        print("video link = " + item_video_link)
+
+    if play_now == False:
+        # ask or wait 10 seconds
+        print("play in .. ", end="", flush=True)
+        i = 9
+        while i > 0:
+            print(str(i) + " ", end="", flush=True)
+            time.sleep(1)
+            i -= 1
+        print("")
+    
+    play(item_video_link)
+
+    if DEBUG:
+        print("published parsed = " + str(publish_date))
+    for item_property in current_item:
+        if DEBUG:
+            print(str(item_property) + " = " + str(current_item[item_property]))
+
+
+
+def main():
+    get_arguments()
+
+    if DEBUG:
+        print("debug enabled")
+
+    play_tagesschau()
+
+
+main()
+
