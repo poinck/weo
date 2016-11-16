@@ -87,26 +87,97 @@ def get_video_link(enclosure, link_type):
     return video_link
 
 
+def is_matching(feed, current_item):
+    matching = False
+
+    publish_date = current_item['published_parsed']
+    publish_date_unparsed = current_item['published']
+    publish_date_formatted = datetime.datetime.strptime(
+        str(publish_date_unparsed),
+        "%a, %d %b %Y %H:%M:%S %z"
+    )
+    today = datetime.datetime.today()
+    published_uts = publish_date_formatted.timestamp()
+    today_uts = today.timestamp()
+    if DEBUG:
+        print("today = " + str(today))
+    match_type = feeds_json[feed]["match_type"]
+    match = feeds_json[feed]["match"]
+
+    # match by day
+    if match_type == "d":
+        if match == 0:
+            if today.year == publish_date.tm_year \
+            and today.month == publish_date.tm_mon \
+            and today.day == publish_date.tm_mday:
+                matching = True
+        else:
+            day_match = match * 86400
+            if DEBUG:
+                print(str(today_uts - day_match) + " <? " \
+                + str(published_uts) + ", day_match = " \
+                + str(day_match))
+            if (today_uts - day_match) < published_uts:
+                matching = True
+
+    # match by week
+    elif match_type == "w":
+        if match == 0:
+            todays_week = today.strftime("%W")
+            published_week = publish_date_formatted.strftime("%W")
+            if DEBUG:
+                print(todays_week + " ?= " + published_week)
+            if todays_week == published_week:
+                matching = True
+        else:
+            week_match = match * 604800
+            if DEBUG:
+                print(str(today_uts - week_match) + " <? " \
+                + str(published_uts) + ", week_match = " \
+                + str(week_match))
+            if (today_uts - week_match) < published_uts:
+                matching = True
+
+    # match by month
+    elif match_type == "m":
+        if match == 0:
+            if today.year == publish_date.tm_year \
+            and today.month == publish_date.tm_mon:
+                matching = True
+        else:
+            month_match = match * 18144000
+            if DEBUG:
+                print(str(today_uts - month_match) + " <? " \
+                + str(published_uts) + ", month_match = " \
+                + str(month_match))
+            if (today_uts - month_match) < published_uts:
+                matching = True
+
+    else:
+        print("match_type '" + match_type + "' not implemented")
+        sys.exit(5)
+
+    return matching
+
+
 def fetch_and_play(feed):
     play_now = False
     expected_date = datetime.datetime.today()
 
     feed_url = feeds_json[feed]["url"]
-    feed = feedparser.parse(feed_url)
-    feed_title = feed['channel']['title']
+    feed_parsed = feedparser.parse(feed_url)
+    feed_title = feed_parsed['channel']['title']
     if DEBUG:
         print("title = " + feed_title)
 
     # sort feed items to ensure we get the latest episode
-    feed_sorted = sorted(feed["items"], key=lambda entry: entry["published_parsed"])
+    feed_sorted = sorted(feed_parsed["items"], key=lambda entry: entry["published_parsed"])
     feed_sorted.reverse()
     current_item = feed_sorted[0]
     publish_date = current_item['published_parsed']
 
     # check wether last episode is from today
-    if expected_date.year == publish_date.tm_year \
-    and expected_date.month == publish_date.tm_mon \
-    and expected_date.day == publish_date.tm_mday:
+    if is_matching(feed, current_item):
         print("last episode is from today, playing now ..")
         play_now = True
     else:
@@ -122,18 +193,23 @@ def fetch_and_play(feed):
         print("video link = " + str(item_video_link))
 
     if item_video_link is None:
-        print("feed has no video link")
+        print("cannot find video link")
         sys.exit(3)
 
     if play_now is False:
         # ask or wait 10 seconds
-        print("play in .. ", end="", flush=True)
-        i = 9
-        while i > 0:
-            print(str(i) + " ", end="", flush=True)
-            time.sleep(1)
-            i -= 1
-        print("")
+        try:
+            print("play in .. ", end="", flush=True)
+            i = 9
+            while i > 0:
+                print(str(i) + " ", end="", flush=True)
+                time.sleep(1)
+                i -= 1
+            print("")
+        except:
+            print(" aborted")
+            sys.exit(4)
+            # TODO  change to question: "play anyway? [y/N]" (default: No)
 
     play(item_video_link)
 
