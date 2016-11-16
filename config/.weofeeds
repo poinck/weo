@@ -1,0 +1,12 @@
+{
+    "ts": {
+        "url": "http://www.tagesschau.de/export/video-podcast/webxl/tagesschau/",
+        "match": 0,
+        "match_type": "d"
+    },
+    "las": {
+        "url": "http://feeds.feedburner.com/computeractionshowvideo?format=xml",
+        "match": 1,
+        "match_type": "w"
+    }
+}
