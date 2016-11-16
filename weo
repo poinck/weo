@@ -46,7 +46,7 @@ def get_arguments():
             DEBUG = True
     if args["feed"] is not None:
         if DEBUG:
-            print(str(args["feed"][0]))
+            print("feed = " + str(args["feed"][0]))
         FEED = args["feed"][0]
 
 
@@ -77,9 +77,14 @@ def play(url):
     call([PLAYER, url])
 
 
-def play_tagesschau():
-    #feed_url = "http://www.tagesschau.de/export/video-podcast/webxl/tagesschau/"
-    fetch_and_play("ts")
+def get_video_link(enclosure, link_type):
+    video_link = None
+
+    for item in enclosure:
+        if "video/mp4" in item["type"]:
+            video_link = item[link_type]
+
+    return video_link
 
 
 def fetch_and_play(feed):
@@ -92,7 +97,10 @@ def fetch_and_play(feed):
     if DEBUG:
         print("title = " + feed_title)
 
-    current_item = feed['items'][0]
+    # sort feed items to ensure we get the latest episode
+    feed_sorted = sorted(feed["items"], key=lambda entry: entry["published_parsed"])
+    feed_sorted.reverse()
+    current_item = feed_sorted[0]
     publish_date = current_item['published_parsed']
 
     # check wether last episode is from today
@@ -106,9 +114,9 @@ def fetch_and_play(feed):
 
     item_video_link = None
     if "media_content" in current_item:
-        item_video_link = current_item['media_content'][0]['url']
+        item_video_link = get_video_link(current_item['media_content'], "url")
     elif "links" in current_item:
-        item_video_link = current_item['links'][0]['href']
+        item_video_link = get_video_link(current_item['links'], "href")
 
     if DEBUG:
         print("video link = " + str(item_video_link))
@@ -145,7 +153,6 @@ def main():
         print("debug enabled")
 
     fetch_and_play(FEED)
-    #play_tagesschau()
 
 
 main()

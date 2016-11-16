@@ -8,5 +8,10 @@
         "url": "http://feeds.feedburner.com/computeractionshowvideo?format=xml",
         "match": 1,
         "match_type": "w"
+    },
+    "gf": {
+        "url": "http://gnufunzt.de/gnufunzt_mp4.rss",
+        "match": 3,
+        "match_type": "m"
     }
 }
