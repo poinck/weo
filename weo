@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 #
-# weo-0.0.1:
-# this first version of weo (watch episode of) can just read the
-# "Tagesschau 20 Uhr (HD)"-feed
+# weo-0.1.0:
+# watch episode of feeds listed in JSON-formatted ~/.weofeeds
 #
 # TODO:
-# - get feeds and their attributes (expected date and time) from a feeds-file
 # - get player configuration from file
 #
 # by André Klausnitzer, no license
@@ -178,7 +176,7 @@ def fetch_and_play(feed):
 
     # check wether last episode is from today
     if is_matching(feed, current_item):
-        print("last episode is from today, playing now ..")
+        print("last episode is current, playing now ..")
         play_now = True
     else:
         print("last episode is from " + str(publish_date.tm_mday) + "." + str(publish_date.tm_mon) + "." + str(publish_date.tm_year))
@@ -197,39 +195,45 @@ def fetch_and_play(feed):
         sys.exit(3)
 
     if play_now is False:
-        # ask or wait 10 seconds
+        # ask to play anyway
         try:
-            print("play in .. ", end="", flush=True)
-            i = 9
-            while i > 0:
-                print(str(i) + " ", end="", flush=True)
-                time.sleep(1)
-                i -= 1
-            print("")
+            answer = input("play anyway? [y/N] ")
+            if DEBUG:
+                print("answer = '" + answer + "'")
+            if answer in ["y", "Y", "yes", "Yes", "YES"]:
+                print("playing .. ")
+                play_now = True
+            else:
+                play_now = False
         except:
-            print(" aborted")
+            print(" aborted ")
             sys.exit(4)
-            # TODO  change to question: "play anyway? [y/N]" (default: No)
 
-    play(item_video_link)
+    if play_now:
+        play(item_video_link)
 
     if DEBUG:
         print("published parsed = " + str(publish_date))
-    for item_property in current_item:
-        if DEBUG:
-            print(str(item_property) + " = " + str(current_item[item_property]))
+        for item_property in current_item:
+            if DEBUG:
+                print(str(item_property) + " = " + str(current_item[item_property]))
 
 
 def main():
     get_arguments()
-    get_config()
-    get_feeds()
-
     if DEBUG:
         print("debug enabled")
+    get_config()
+    get_feeds()
 
     fetch_and_play(FEED)
 
 
+def tests():
+    line = input("ja? ")
+    print(line)
+
+
+#tests()
 main()
 
