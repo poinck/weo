@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# weo-0.1.1:
+# weo-0.1.2:
 # watch episode of feeds listed in JSON-formatted ~/.weofeeds
 #
 # TODO:
@@ -168,6 +168,22 @@ def is_matching(feed, current_item):
     return matching
 
 
+def is_existing_feed(feed):
+    existing = False
+
+    try:
+        feed_url = feeds_json[feed]["url"]
+        existing = True
+    except KeyError:
+        print("'" + feed + "' is not known to weo")
+
+    if existing is False:
+        # list existing feeds
+        print('following feeds are configured in "~/.weofeeds":')
+        for current_feed in feeds_json:
+            print("  " + str(current_feed))
+
+
 def fetch_and_play(feed):
     play_now = False
     expected_date = datetime.datetime.today()
@@ -243,7 +259,8 @@ def main():
     get_config()
     get_feeds()
 
-    fetch_and_play(FEED)
+    if is_existing_feed(FEED):
+        fetch_and_play(FEED)
 
 
 def tests():
