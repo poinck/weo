@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# weo-0.1.0:
+# weo-0.1.1:
 # watch episode of feeds listed in JSON-formatted ~/.weofeeds
 #
 # TODO:
@@ -17,7 +17,8 @@ import time
 import datetime
 import argparse
 import configparser
-from subprocess import call
+#from subprocess import call
+import subprocess
 
 DEBUG = False
 
@@ -27,6 +28,11 @@ CONFIG_FILE = ".weorc"
 FEED_FILE = ".weofeeds"
 HOME_DIR = os.path.expanduser("~")
 FEED = None
+
+# colors
+C_CLEAR = '\x1b[0m'
+C_BRED = '\x1b[1;31m'
+C_BWHITE = '\x1b[1;37m'
 
 def get_arguments():
     global DEBUG
@@ -72,7 +78,11 @@ def play(url):
     if DEBUG:
         print("url = " + url)
 
-    call([PLAYER, url])
+    #with open("/dev/null", 'w') as fnull:
+    if DEBUG:
+        subprocess.call([PLAYER, url])
+    else:
+        subprocess.call([PLAYER, url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def get_video_link(enclosure, link_type):
@@ -169,17 +179,22 @@ def fetch_and_play(feed):
         print("title = " + feed_title)
 
     # sort feed items to ensure we get the latest episode
-    feed_sorted = sorted(feed_parsed["items"], key=lambda entry: entry["published_parsed"])
+    feed_sorted = sorted(
+        feed_parsed["items"],
+        key=lambda entry: entry["published_parsed"]
+    )
     feed_sorted.reverse()
     current_item = feed_sorted[0]
     publish_date = current_item['published_parsed']
 
     # check wether last episode is from today
     if is_matching(feed, current_item):
-        print("last episode is current, playing now ..")
+        print('last episode of "' + str(feed_title) + '" is current, playing now ..')
         play_now = True
     else:
-        print("last episode is from " + str(publish_date.tm_mday) + "." + str(publish_date.tm_mon) + "." + str(publish_date.tm_year))
+        print('last episode of "' + str(feed_title) + '" is from ' \
+        + str(publish_date.tm_mday) \
+        + '.' + str(publish_date.tm_mon) + '.' + str(publish_date.tm_year))
 
     item_video_link = None
     if "media_content" in current_item:
@@ -197,7 +212,9 @@ def fetch_and_play(feed):
     if play_now is False:
         # ask to play anyway
         try:
-            answer = input("play anyway? [y/N] ")
+            print('play anyway? [' + C_BWHITE + 'y' + C_CLEAR + '/' + C_BRED \
+            + 'N' + C_CLEAR + '] ', end="", flush=True)
+            answer = input()
             if DEBUG:
                 print("answer = '" + answer + "'")
             if answer in ["y", "Y", "yes", "Yes", "YES"]:
@@ -232,6 +249,24 @@ def main():
 def tests():
     line = input("ja? ")
     print(line)
+
+
+# print_format_table: http://stackoverflow.com/questions/287871/print-in-terminal-with-colors-using-python#287944
+def print_format_table():
+    """
+    prints table of formatted text format options
+    """
+    for style in range(8):
+        for fg in range(30,38):
+            s1 = ''
+            for bg in range(40,48):
+                format = ';'.join([str(style), str(fg), str(bg)])
+                s1 += '\x1b[%sm %s \x1b[0m' % (format, format)
+            print(s1)
+        print('\n')
+
+
+#print_format_table()
 
 
 #tests()
