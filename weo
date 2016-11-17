@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# weo-0.1.2:
+# weo-0.1.3:
 # watch episode of feeds listed in JSON-formatted ~/.weofeeds
 #
 # TODO:
@@ -17,10 +17,10 @@ import time
 import datetime
 import argparse
 import configparser
-#from subprocess import call
 import subprocess
 
 DEBUG = False
+LIST = False
 
 # defaults
 PLAYER = "mplayer"
@@ -37,21 +37,26 @@ C_BWHITE = '\x1b[1;37m'
 def get_arguments():
     global DEBUG
     global FEED
+    global LIST
 
     # parse commandline arguments
     parser = argparse.ArgumentParser(description="weo - watch episode of")
     parser.add_argument('-v', '--verbose', help='enable debugging', action='count')
-    parser.add_argument('feed', metavar='FEED', help='feed shortcut', nargs=1)
+    parser.add_argument('-l', '--list', help='list known feeds', action='store_true')
+    parser.add_argument('feed', metavar='FEED', help='feed shortcut', type=str, nargs='?')
 
     args = vars(parser.parse_args())
 
     if args["verbose"] is not None:
         if args["verbose"] > 0:
             DEBUG = True
+    if args["list"] is not None:
+        if args["list"] > 0:
+            LIST = True
     if args["feed"] is not None:
         if DEBUG:
-            print("feed = " + str(args["feed"][0]))
-        FEED = args["feed"][0]
+            print("feed = " + str(args["feed"]))
+        FEED = args["feed"]
 
 
 def get_config():
@@ -64,21 +69,25 @@ feeds_json = None
 def get_feeds():
     global feeds_json
 
-    with open(HOME_DIR + "/" + FEED_FILE) as json_file:
-        feeds_json = json.load(json_file)
+    try:
+        with open(HOME_DIR + "/" + FEED_FILE) as json_file:
+            feeds_json = json.load(json_file)
+    except:
+        print('please ensure that "~/' + FEED_FILE \
+        + '" is existing, readable and contains valid JSON.')
+        sys.exit(5)
 
     if feeds_json is not None:
         if DEBUG:
             print("feeds json = " + str(feeds_json))
     else:
-        print("no feed file or feed file not valid at " + HOME_DIR + "/" + FEED_FILE)
+        print('"~/' + FEED_FILE + '" is empty or does not contain JSON')
 
 
 def play(url):
     if DEBUG:
         print("url = " + url)
 
-    #with open("/dev/null", 'w') as fnull:
     if DEBUG:
         subprocess.call([PLAYER, url])
     else:
@@ -174,14 +183,22 @@ def is_existing_feed(feed):
     try:
         feed_url = feeds_json[feed]["url"]
         existing = True
-    except KeyError:
-        print("'" + feed + "' is not known to weo")
+    except:
+        if feed is not None:
+            print("'" + feed + "' is not known to weo")
+        else:
+            print('please specify a feed shortcut that is known to weo')
 
     if existing is False:
-        # list existing feeds
-        print('following feeds are configured in "~/.weofeeds":')
-        for current_feed in feeds_json:
-            print("  " + str(current_feed))
+        list_feeds()
+
+    return existing
+
+
+def list_feeds():
+    print('following feeds are configured in "~/' + FEED_FILE + '":')
+    for current_feed in feeds_json:
+        print("  " + str(current_feed))
 
 
 def fetch_and_play(feed):
@@ -259,7 +276,9 @@ def main():
     get_config()
     get_feeds()
 
-    if is_existing_feed(FEED):
+    if LIST:
+        list_feeds()
+    elif is_existing_feed(FEED):
         fetch_and_play(FEED)
 
 
