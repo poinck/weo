@@ -35,6 +35,18 @@ Following Python3-libs need to be installed on your system:
 - **`match_type`:** any value of `"d"` (day), `"w"` (week) or `"m"` (month).
 - **`match`:** if `0` the current day, week or month (match_type) needs to match, otherwise the last days, weeks or months are valid. If the last eposide is not in that time frame, "weo" will ask
 
+### Usage example
+
+```.sh
+$ weo -l
+following feeds are configured in "~/.weofeeds":
+  feed
+$ weo feed
+last episode of "Video-Feed in HD" is from 17.11.2016
+play anyway? [y/N] y
+playing ..
+```
+
 *A future version of "weo" will enable you adding podcast-feeds without editing the JSON-formatted feeds-file yourself*
 
 
