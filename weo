@@ -112,6 +112,8 @@ def is_matching(feed, current_item):
         str(publish_date_unparsed),
         "%a, %d %b %Y %H:%M:%S %z"
     )
+        # FIXME do not assume just this time format, use publish_parsed
+        # instead and create newdatetime-object
     today = datetime.datetime.today()
     published_uts = publish_date_formatted.timestamp()
     today_uts = today.timestamp()
