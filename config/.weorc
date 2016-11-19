@@ -1,0 +1,3 @@
+# set player to use, last entry wins
+player = omxplayer -b -o both
+player = mplayer
