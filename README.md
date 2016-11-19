@@ -3,7 +3,7 @@
 **watch episode of:**
 `weo` is a very simple video-podcast-script to watch the last episode of a RSS-feed with video-content in MP4-format.
 
-*A future version of "weo" will not just support `mplayer`, but others as well. The motivation for this script is to use it for `omxplayer` on a Raspberry Pi to avoid using Kodi to manage your favourite video-podcasts.*
+*A future version of "weo" will support youtube-channels by extracting the url with `youtube-dl`*
 
 
 ## Dependencies
