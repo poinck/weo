@@ -97,11 +97,14 @@ def play(url):
         print("url = " + url)
 
     try:
+        play_cmd = PLAYER.split(" ")
+        play_cmd.append(url)
         if DEBUG:
-            subprocess.call([PLAYER, url])
+            print("play_cmd = " + str(play_cmd))
+            subprocess.call(play_cmd)
         else:
             subprocess.call(
-                [PLAYER, url],
+                play_cmd,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
