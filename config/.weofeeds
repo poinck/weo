@@ -13,5 +13,10 @@
         "url": "http://gnufunzt.de/gnufunzt_mp4.rss",
         "match": 3,
         "match_type": "m"
+    },
+    "nm": {
+        "url": "https://www.zdf.de/rss/podcast/video/zdf/comedy/neo-magazin-mit-jan-boehmermann",
+        "match": 1,
+        "match_type": "w"
     }
 }

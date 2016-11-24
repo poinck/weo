@@ -30,6 +30,7 @@ C_CLEAR = '\x1b[0m'
 C_BRED = '\x1b[1;31m'
 C_BWHITE = '\x1b[1;37m'
 
+
 def get_arguments():
     global DEBUG
     global FEED
@@ -126,15 +127,17 @@ def is_matching(feed, current_item):
     matching = False
 
     publish_date = current_item['published_parsed']
-    publish_date_unparsed = current_item['published']
-    publish_date_formatted = datetime.datetime.strptime(
-        str(publish_date_unparsed),
-        "%a, %d %b %Y %H:%M:%S %z"
+    if DEBUG:
+        print("publish_date = " + str(publish_date))
+    publish_date_dt = datetime.datetime(
+        publish_date.tm_year,
+        publish_date.tm_mon,
+        publish_date.tm_mday,
+        publish_date.tm_hour,
+        publish_date.tm_min
     )
-        # FIXME do not assume just this time format, use publish_parsed
-        # instead and create newdatetime-object
     today = datetime.datetime.today()
-    published_uts = publish_date_formatted.timestamp()
+    published_uts = publish_date_dt.timestamp()
     today_uts = today.timestamp()
     if DEBUG:
         print("today = " + str(today))
