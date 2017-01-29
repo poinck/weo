@@ -18,5 +18,20 @@
         "url": "https://www.zdf.de/rss/podcast/video/zdf/comedy/neo-magazin-mit-jan-boehmermann",
         "match": 1,
         "match_type": "w"
+    },
+    "e3": {
+        "url": "http://www.ndr.de/fernsehen/sendungen/extra_3/video-podcast/index.xml",
+        "match": 1,
+        "match_type": "w"
+    },
+    "nano": {
+        "url": "http://www.3sat.de/mediaplayer/rss/mediathek_nano.xml",
+        "match": 1,
+        "match_type": "w"
+    },
+    "ttt": {
+        "url": "http://mediathek.daserste.de/ttt-titel-thesen-temperamente/Sendung?documentId=447604&rss=true",
+        "match": 1,
+        "match_type": "w"
     }
 }
