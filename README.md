@@ -3,7 +3,7 @@
 **watch episode of:**
 `weo` is a very simple video-podcast-script to watch the last episode of a RSS-feed with video-content in MP4-format.
 
-*A future version of "weo" will support youtube-channels by extracting the url with `youtube-dl`*
+*New: The current version of "weo" supports youtube-channel-rss. Player needs to be "mpv", see 'Configuration'.*
 
 
 ## Dependencies
@@ -17,6 +17,14 @@ Following Python3-libs need to be installed on your system:
 
 - just copy "weo" to a folder in your `$PATH`.
 
+
+## Configuration
+
+- to change the default player from "mplayer" to "mpv", edit "`~/.weorc`":
+
+```.sh
+player=mpv
+```
 
 ## Usage
 
