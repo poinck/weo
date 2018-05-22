@@ -115,10 +115,22 @@ def play(url):
 
 def get_video_link(enclosure, link_type):
     video_link = None
+    video_link_quicktime = None
 
     for item in enclosure:
         if "video/mp4" in item["type"]:
             video_link = item[link_type]
+        elif "video/quicktime" in item["type"]:
+            video_link_quicktime = item[link_type]
+            break
+
+    if video_link == None:
+        for item in enclosure:
+            if "text/html" in item["type"]:
+                video_link = item[link_type]
+
+    if video_link == None:
+        video_link = video_link_quicktime
 
     return video_link
 
@@ -253,10 +265,19 @@ def fetch_and_play(feed):
         + '.' + str(publish_date.tm_mon) + '.' + str(publish_date.tm_year))
 
     item_video_link = None
-    if "media_content" in current_item:
-        item_video_link = get_video_link(current_item['media_content'], "url")
-    elif "links" in current_item:
-        item_video_link = get_video_link(current_item['links'], "href")
+
+    if DEBUG:
+        print("current_item = " + str(current_item))
+
+    if "yt_channelid" in current_item:
+        # use "links" if this is a youtube-channel
+        if "links" in current_item:
+            item_video_link = get_video_link(current_item['links'], "href")
+    else:
+        if "media_content" in current_item:
+            item_video_link = get_video_link(current_item['media_content'], "url")
+        elif "links" in current_item:
+            item_video_link = get_video_link(current_item['links'], "href")
 
     if DEBUG:
         print("video link = " + str(item_video_link))
