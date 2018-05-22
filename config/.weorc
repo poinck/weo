@@ -1,2 +1,3 @@
 player = omxplayer -b -o both
 player = mplayer
+player = mpv
