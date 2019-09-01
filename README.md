@@ -1,9 +1,9 @@
 # Readme: weo
 
 **watch episode of:**
-`weo` is a very simple video-podcast-script to watch the last episode of a RSS-feed with video-content in MP4-format.
+`weo` is a very simple video-podcast-script to watch the last episode of a RSS-feed with video-content or everything that is supported by the youtube-dl backend of *`mpv`*.
 
-*New: The current version of "weo" supports youtube-channel-rss. Player needs to be "mpv", see 'Configuration'.*
+*New (Sep 2019): The current version of "weo" supports youtube-channels. Player needs to be "mpv", see 'Configuration'.*
 
 
 ## Dependencies
@@ -20,10 +20,10 @@ Following Python3-libs need to be installed on your system:
 
 ## Configuration
 
-- to change the default player from "mplayer" to "mpv", edit "`~/.weorc`":
+- to change the default player from "mpv" to "mplayer", edit "`~/.weorc`":
 
 ```.sh
-player=mpv
+player=mplayer
 ```
 
 ## Usage
@@ -33,15 +33,20 @@ player=mpv
 ```.json
 {
     "feed": {
-        "url": "http://feed.tld/rss",
+        "url": "https://feed.tld/rss",
         "match": 0,
         "match_type": "d"
+    },
+    "ytchannel": {
+        "url": "https://youtube.com/user/channelName/videos",
+        "url_type": "yt"
     }
 }
 ```
 
 - **`match_type`:** any value of `"d"` (day), `"w"` (week) or `"m"` (month).
 - **`match`:** if `0` the current day, week or month (match_type) needs to match, otherwise the last days, weeks or months are valid. If the last eposide is not in that time frame, "weo" will ask
+- **`url_type`** needs to be `"yt"` for Youtube-links.
 
 ### Usage example
 
