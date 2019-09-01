@@ -33,5 +33,11 @@
         "url": "http://mediathek.daserste.de/ttt-titel-thesen-temperamente/Sendung?documentId=447604&rss=true",
         "match": 1,
         "match_type": "w"
+    },
+    "ld": {
+        "url": "https://www.youtube.com/user/BryanLunduke/videos",
+        "url_type": "yt",
+        "match": 1,
+        "match_type": "w"
     }
 }

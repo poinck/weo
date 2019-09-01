@@ -19,7 +19,7 @@ DEBUG = False
 LIST = False
 
 # defaults
-PLAYER = "mplayer"
+PLAYER = "mpv"
 CONFIG_FILE = ".weorc"
 FEED_FILE = ".weofeeds"
 HOME_DIR = os.path.expanduser("~")
@@ -37,7 +37,7 @@ def get_arguments():
     global LIST
 
     # parse commandline arguments
-    parser = argparse.ArgumentParser(description="weo-0.1.4: watch episode of")
+    parser = argparse.ArgumentParser(description="weo-0.1.5: watch episode of")
     parser.add_argument('-v', '--verbose', help='enable debugging', action='count')
     parser.add_argument('-l', '--list', help='list known feeds', action='store_true')
     parser.add_argument('feed', metavar='FEED', help='feed shortcut', type=str, nargs='?')
@@ -99,6 +99,8 @@ def play(url):
 
     try:
         play_cmd = PLAYER.split(" ")
+        if ytdl_backend:
+            play_cmd.append("--ytdl-raw-options=playlist-items=1")
         play_cmd.append(url)
         if DEBUG:
             print("play_cmd = " + str(play_cmd))
@@ -237,47 +239,67 @@ def list_feeds():
 
 
 def fetch_and_play(feed):
+    global ytdl_backend
+
     play_now = False
     expected_date = datetime.datetime.today()
 
     feed_url = feeds_json[feed]["url"]
-    feed_parsed = feedparser.parse(feed_url)
-    feed_title = feed_parsed['channel']['title']
-    if DEBUG:
-        print("title = " + feed_title)
 
-    # sort feed items to ensure we get the latest episode
-    feed_sorted = sorted(
-        feed_parsed["items"],
-        key=lambda entry: entry["published_parsed"]
-    )
-    feed_sorted.reverse()
-    current_item = feed_sorted[0]
-    publish_date = current_item['published_parsed']
+    # check whether youtube-dl backend should be used (not XML from YT)
+    try:
+        feed_url_type = feeds_json[feed]["url_type"]
+        if feed_url_type == "yt":
+            ytdl_backend = True
+            print("using youtube-dl backend")
+    except:
+        ytdl_backend = False
 
-    # check wether last episode is from today
-    if is_matching(feed, current_item):
-        print('last episode of "' + str(feed_title) + '" is current, playing now ..')
+    if ytdl_backend:
+        # use url directly
+        # TODO
+        # - select playlist-item via parameter
+        item_video_link = feed_url
         play_now = True
     else:
-        print('last episode of "' + str(feed_title) + '" is from ' \
-        + str(publish_date.tm_mday) \
-        + '.' + str(publish_date.tm_mon) + '.' + str(publish_date.tm_year))
+        # XML
+        feed_parsed = feedparser.parse(feed_url)
+        feed_title = feed_parsed['channel']['title']
+        if DEBUG:
+            print("title = " + feed_title)
 
-    item_video_link = None
+        # sort feed items to ensure we get the latest episode
+        feed_sorted = sorted(
+            feed_parsed["items"],
+            key=lambda entry: entry["published_parsed"]
+        )
+        feed_sorted.reverse()
+        current_item = feed_sorted[0]
+        publish_date = current_item['published_parsed']
 
-    if DEBUG:
-        print("current_item = " + str(current_item))
+        # check wether last episode is from today
+        if is_matching(feed, current_item):
+            print('last episode of "' + str(feed_title) + '" is current, playing now ..')
+            play_now = True
+        else:
+            print('last episode of "' + str(feed_title) + '" is from ' \
+            + str(publish_date.tm_mday) \
+            + '.' + str(publish_date.tm_mon) + '.' + str(publish_date.tm_year))
 
-    if "yt_channelid" in current_item:
-        # use "links" if this is a youtube-channel
-        if "links" in current_item:
-            item_video_link = get_video_link(current_item['links'], "href")
-    else:
-        if "media_content" in current_item:
-            item_video_link = get_video_link(current_item['media_content'], "url")
-        elif "links" in current_item:
-            item_video_link = get_video_link(current_item['links'], "href")
+        item_video_link = None
+
+        if DEBUG:
+            print("current_item = " + str(current_item))
+
+        if "yt_channelid" in current_item:
+            # use "links" if this is a youtube-channel
+            if "links" in current_item:
+                item_video_link = get_video_link(current_item['links'], "href")
+        else:
+            if "media_content" in current_item:
+                item_video_link = get_video_link(current_item['media_content'], "url")
+            elif "links" in current_item:
+                item_video_link = get_video_link(current_item['links'], "href")
 
     if DEBUG:
         print("video link = " + str(item_video_link))
