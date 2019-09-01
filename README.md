@@ -48,7 +48,7 @@ player=mplayer
 - **`match`:** if `0` the current day, week or month (match_type) needs to match, otherwise the last days, weeks or months are valid. If the last eposide is not in that time frame, "weo" will ask
 - **`url_type`** needs to be `"yt"` for Youtube-links.
 
-### Usage example
+### Usage examples
 
 ```.sh
 $ weo -l
@@ -58,6 +58,21 @@ $ weo feed
 last episode of "Video-Feed in HD" is from 17.11.2016
 play anyway? [y/N] y
 playing ..
+
+# getting help
+$ weo -h
+usage: weo [-h] [-v] [-l] [FEED] [ITEM]
+
+weo-0.1.5: watch episode of
+
+positional arguments:
+  FEED           feed shortcut
+  ITEM           item in a Youtube-channel (default: last(1))
+
+optional arguments:
+  -h, --help     show this help message and exit
+  -v, --verbose  enable debugging
+  -l, --list     list known feeds
 ```
 
 *A future version of "weo" will enable you adding podcast-feeds without editing the JSON-formatted feeds-file yourself*

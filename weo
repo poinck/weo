@@ -34,6 +34,7 @@ C_BWHITE = '\x1b[1;37m'
 def get_arguments():
     global DEBUG
     global FEED
+    global CHITEM
     global LIST
 
     # parse commandline arguments
@@ -41,6 +42,7 @@ def get_arguments():
     parser.add_argument('-v', '--verbose', help='enable debugging', action='count')
     parser.add_argument('-l', '--list', help='list known feeds', action='store_true')
     parser.add_argument('feed', metavar='FEED', help='feed shortcut', type=str, nargs='?')
+    parser.add_argument('item', metavar='ITEM', help='item in a Youtube-channel (default: last(1))', type=int, nargs='?')
 
     args = vars(parser.parse_args())
 
@@ -54,6 +56,12 @@ def get_arguments():
         if DEBUG:
             print("feed = " + str(args["feed"]))
         FEED = args["feed"]
+    if args["item"] is not None:
+        if DEBUG:
+            print("item = " + str(args["item"]))
+        CHITEM = args["item"]
+    else:
+        CHITEM="1"
 
 
 def get_config():
@@ -100,7 +108,7 @@ def play(url):
     try:
         play_cmd = PLAYER.split(" ")
         if ytdl_backend:
-            play_cmd.append("--ytdl-raw-options=playlist-items=1")
+            play_cmd.append("--ytdl-raw-options=playlist-items=" + str(CHITEM))
         play_cmd.append(url)
         if DEBUG:
             print("play_cmd = " + str(play_cmd))
@@ -247,18 +255,23 @@ def fetch_and_play(feed):
     feed_url = feeds_json[feed]["url"]
 
     # check whether youtube-dl backend should be used (not XML from YT)
+    if DEBUG:
+        print("CHITEM = " + str(CHITEM))
     try:
         feed_url_type = feeds_json[feed]["url_type"]
+        if DEBUG:
+            print("feed_url_type = " + feed_url_type)
         if feed_url_type == "yt":
             ytdl_backend = True
-            print("using youtube-dl backend")
+            print("using youtube-dl backend for " + str(CHITEM) + ". last episode")
     except:
         ytdl_backend = False
 
+    if DEBUG:
+        print("ytdl_backend = " + str(ytdl_backend))
+
     if ytdl_backend:
         # use url directly
-        # TODO
-        # - select playlist-item via parameter
         item_video_link = feed_url
         play_now = True
     else:
@@ -329,10 +342,11 @@ def fetch_and_play(feed):
         play(item_video_link)
 
     if DEBUG:
-        print("published parsed = " + str(publish_date))
-        for item_property in current_item:
-            if DEBUG:
-                print(str(item_property) + " = " + str(current_item[item_property]))
+        if not ytdl_backend:
+            print("published parsed = " + str(publish_date))
+            for item_property in current_item:
+                if DEBUG:
+                    print(str(item_property) + " = " + str(current_item[item_property]))
 
 
 def main():

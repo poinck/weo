@@ -37,7 +37,5 @@
     "ld": {
         "url": "https://www.youtube.com/user/BryanLunduke/videos",
         "url_type": "yt",
-        "match": 1,
-        "match_type": "w"
     }
 }
