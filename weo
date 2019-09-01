@@ -42,7 +42,7 @@ def get_arguments():
     parser.add_argument('-v', '--verbose', help='enable debugging', action='count')
     parser.add_argument('-l', '--list', help='list known feeds', action='store_true')
     parser.add_argument('feed', metavar='FEED', help='feed shortcut', type=str, nargs='?')
-    parser.add_argument('item', metavar='ITEM', help='item in a Youtube-channel (default: last(1))', type=int, nargs='?')
+    parser.add_argument('item', metavar='EPISODE', help='last episode number in a Youtube-channel (default: 1, newest)', type=int, nargs='?')
 
     args = vars(parser.parse_args())
 
@@ -263,7 +263,7 @@ def fetch_and_play(feed):
             print("feed_url_type = " + feed_url_type)
         if feed_url_type == "yt":
             ytdl_backend = True
-            print("using youtube-dl backend for " + str(CHITEM) + ". last episode")
+            print("playing " + str(CHITEM) + ". last episode using the youtube-dl backend ..")
     except:
         ytdl_backend = False
 

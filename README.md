@@ -61,13 +61,13 @@ playing ..
 
 # getting help
 $ weo -h
-usage: weo [-h] [-v] [-l] [FEED] [ITEM]
+usage: weo [-h] [-v] [-l] [FEED] [EPISODE]
 
 weo-0.1.5: watch episode of
 
 positional arguments:
   FEED           feed shortcut
-  ITEM           item in a Youtube-channel (default: last(1))
+  EPISODE        last episode number in a Youtube-channel (default: 1, newest)
 
 optional arguments:
   -h, --help     show this help message and exit

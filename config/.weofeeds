@@ -36,6 +36,10 @@
     },
     "ld": {
         "url": "https://www.youtube.com/user/BryanLunduke/videos",
-        "url_type": "yt",
+        "url_type": "yt"
+    },
+    "lwt": {
+        "url": "https://www.youtube.com/user/LastWeekTonight/videos",
+        "url_type": "yt"
     }
 }
