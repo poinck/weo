@@ -17,6 +17,7 @@ import subprocess
 
 DEBUG = False
 LIST = False
+CURL = False
 
 # defaults
 PLAYER = "mpv"
@@ -36,11 +37,13 @@ def get_arguments():
     global FEED
     global CHITEM
     global LIST
+    global CURL
 
     # parse commandline arguments
-    parser = argparse.ArgumentParser(description="weo-0.1.5: watch episode of")
+    parser = argparse.ArgumentParser(description="weo-0.1.6: watch episode of")
     parser.add_argument('-v', '--verbose', help='enable debugging', action='count')
     parser.add_argument('-l', '--list', help='list known feeds', action='store_true')
+    parser.add_argument('-c', '--curl', help='download instead of playing (experimental)', action='store_true')
     parser.add_argument('feed', metavar='FEED', help='feed shortcut', type=str, nargs='?')
     parser.add_argument('item', metavar='EPISODE', help='last episode number in a Youtube-channel (default: 1, newest)', type=int, nargs='?')
 
@@ -52,6 +55,9 @@ def get_arguments():
     if args["list"] is not None:
         if args["list"] > 0:
             LIST = True
+    if args["curl"] is not None:
+        if args["curl"] > 0:
+            CURL = True
     if args["feed"] is not None:
         if DEBUG:
             print("feed = " + str(args["feed"]))
@@ -106,19 +112,33 @@ def play(url):
         print("url = " + url)
 
     try:
-        play_cmd = PLAYER.split(" ")
-        if ytdl_backend:
-            play_cmd.append("--ytdl-raw-options=playlist-items=" + str(CHITEM))
-        play_cmd.append(url)
-        if DEBUG:
-            print("play_cmd = " + str(play_cmd))
-            subprocess.call(play_cmd)
+        if CURL == True:
+            if DEBUG:
+                curl_cmd = "curl -o " + FEED + ".mp4"
+                curl_cmd = curl_cmd.split(" ")
+                curl_cmd.append(url)
+                print("curl_cmd = " + str(curl_cmd))
+                subprocess.call(curl_cmd)
+            else:
+                subprocess.call(
+                    curl_cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
         else:
-            subprocess.call(
-                play_cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
+            play_cmd = PLAYER.split(" ")
+            if ytdl_backend:
+                play_cmd.append("--ytdl-raw-options=playlist-items=" + str(CHITEM))
+            play_cmd.append(url)
+            if DEBUG:
+                print("play_cmd = " + str(play_cmd))
+                subprocess.call(play_cmd)
+            else:
+                subprocess.call(
+                    play_cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
     except:
         print('could not use "' + PLAYER  + '" to play episode')
 
