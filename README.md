@@ -1,3 +1,5 @@
+*project has moved to (Gitlab)[https://gitlab.com/poinck/weo]*
+
 # Readme: weo
 
 **watch episode of:**
