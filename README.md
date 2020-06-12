@@ -1,4 +1,4 @@
-*project has moved to (Gitlab)[https://gitlab.com/poinck/weo]*
+*project has moved to [Gitlab](https://gitlab.com/poinck/weo)*
 
 # Readme: weo
 
