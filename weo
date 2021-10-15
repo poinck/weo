@@ -44,7 +44,7 @@ def get_arguments():
     global CURL
 
     # parse commandline arguments
-    parser = argparse.ArgumentParser(description="weo-3: watch episode of")
+    parser = argparse.ArgumentParser(description="weo-4: watch episode of")
     parser.add_argument('-v', '--verbose', help='enable debugging', action='count')
     parser.add_argument('-l', '--list', help='list known feeds or episodes if FEED is given', action='store_true')
     parser.add_argument('-c', '--curl', help='download instead of playing (experimental)', action='store_true')
@@ -131,8 +131,6 @@ def play(url):
                 )
         else:
             play_cmd = PLAYER.split(" ")
-            if ytdl_backend:
-                play_cmd.append("--ytdl-raw-options=playlist-items=" + str(CHITEM))
             play_cmd.append(url)
             if DEBUG:
                 print("play_cmd = " + str(play_cmd))
@@ -272,16 +270,10 @@ def list_feeds():
                 feed_name = feeds_json[current_feed]["name"]
             except:
                 feed_name = ""
-            try:
-                feed_url_type = feeds_json[current_feed]["url_type"]
-                if feed_url_type == "yt":
-                    yt = C_BPURPLE
-            except:
-                yt = C_BWHITE
             if feed_name == "":
-                print("  " + yt + str(current_feed) + C_CLEAR)
+                print("  " + C_BWHITE + str(current_feed) + C_CLEAR)
             else:
-                print("  " + yt + str(current_feed) + C_CLEAR + TAB + "  " \
+                print("  " + C_BWHITE + str(current_feed) + C_CLEAR + TAB + "  " \
                 + str(feed_name))
     else:
         # list titles of feed episodes
@@ -290,15 +282,7 @@ def list_feeds():
             feed_name = "(" + feed_name + ") "
         except:
             feed_name = ""
-        try:
-            feed_url_type = feeds_json[FEED]["url_type"]
-            if DEBUG:
-                print("feed_url_type = " + feed_url_type)
-            if feed_url_type == "yt":
-                yt = C_BPURPLE
-        except:
-            yt = C_BWHITE
-        print(yt + FEED + C_CLEAR + " " + feed_name + "has following episodes:")
+        print(C_BWHITE + FEED + C_CLEAR + " " + feed_name + "has following episodes:")
         print("EPISODE  minutes  name")
         try:
             feed_url = feeds_json[FEED]["url"]
@@ -333,13 +317,9 @@ def list_feeds():
         except:
             print("there is a problem with the feed url.")
             sys.exit(4)
-        if yt == C_BPURPLE:
-            print("listing episodes of youtube channels is currently not supported.")
 
 
 def fetch_and_play(feed):
-    global ytdl_backend
-
     play_now = False
     expected_date = datetime.datetime.today()
 
@@ -348,77 +328,60 @@ def fetch_and_play(feed):
     # check whether youtube-dl backend should be used (not XML from YT)
     if DEBUG:
         print("CHITEM = " + str(CHITEM))
-    try:
-        feed_url_type = feeds_json[feed]["url_type"]
-        if DEBUG:
-            print("feed_url_type = " + feed_url_type)
-        if feed_url_type == "yt":
-            ytdl_backend = True
-            print("playing episode " + str(CHITEM) + " using a youtube backend ..")
-    except:
-        ytdl_backend = False
 
+    # XML
+    feed_parsed = feedparser.parse(feed_url)
+    feed_title = feed_parsed['channel']['title']
     if DEBUG:
-        print("ytdl_backend = " + str(ytdl_backend))
+        print("title = " + feed_title)
 
-    if ytdl_backend:
-        # use url directly
-        item_video_link = feed_url
+    # sort feed items to ensure we get the latest episode
+    feed_sorted = sorted(
+        feed_parsed["items"],
+        key=lambda entry: entry["published_parsed"]
+    )
+    feed_sorted.reverse()
+    current_item = feed_sorted[int(CHITEM)]
+    publish_date = current_item['published_parsed']
+    episode_title = feed_sorted[int(CHITEM)]["title"]
+    episode_title = " (" + episode_title + ") "
+
+    # check wether last episode is within specified time frame
+    if is_matching(feed, current_item):
+        print("last episode" + episode_title \
+        + "of " + C_BWHITE + str(feed) + C_CLEAR \
+        + " is current, playing now ..")
         play_now = True
     else:
-        # XML
-        feed_parsed = feedparser.parse(feed_url)
-        feed_title = feed_parsed['channel']['title']
-        if DEBUG:
-            print("title = " + feed_title)
-
-        # sort feed items to ensure we get the latest episode
-        feed_sorted = sorted(
-            feed_parsed["items"],
-            key=lambda entry: entry["published_parsed"]
-        )
-        feed_sorted.reverse()
-        current_item = feed_sorted[int(CHITEM)]
-        publish_date = current_item['published_parsed']
-        episode_title = feed_sorted[int(CHITEM)]["title"]
-        episode_title = " (" + episode_title + ") "
-
-        # check wether last episode is within specified time frame
-        if is_matching(feed, current_item):
-            print("last episode" + episode_title \
-            + "of " + C_BWHITE + str(feed) + C_CLEAR \
-            + " is current, playing now ..")
+        if int(CHITEM) > 0:
+            print("playing episode " + str(CHITEM) \
+            + episode_title + "of " \
+            + C_BWHITE + str(feed) + C_CLEAR + " from " \
+            + str(publish_date.tm_year) \
+            + "-" + str(publish_date.tm_mon) + "-" \
+            + str(publish_date.tm_mday) + " now ..")
             play_now = True
         else:
-            if int(CHITEM) > 0:
-                print("playing episode " + str(CHITEM) \
-                + episode_title + "of " \
-                + C_BWHITE + str(feed) + C_CLEAR + " from " \
-                + str(publish_date.tm_year) \
-                + "-" + str(publish_date.tm_mon) + "-" \
-                + str(publish_date.tm_mday) + " now ..")
-                play_now = True
-            else:
-                print("last episode of " + C_BWHITE + str(feed) + C_CLEAR \
-                + " is from " \
-                + str(publish_date.tm_year) \
-                + "-" + str(publish_date.tm_mon) + "-" \
-                + str(publish_date.tm_mday))
+            print("last episode of " + C_BWHITE + str(feed) + C_CLEAR \
+            + " is from " \
+            + str(publish_date.tm_year) \
+            + "-" + str(publish_date.tm_mon) + "-" \
+            + str(publish_date.tm_mday))
 
-        item_video_link = None
+    item_video_link = None
 
-        if DEBUG:
-            print("current_item = " + str(current_item))
+    if DEBUG:
+        print("current_item = " + str(current_item))
 
-        if "yt_channelid" in current_item:
-            # use "links" if this is a youtube-channel
-            if "links" in current_item:
-                item_video_link = get_video_link(current_item['links'], "href")
-        else:
-            if "media_content" in current_item:
-                item_video_link = get_video_link(current_item['media_content'], "url")
-            elif "links" in current_item:
-                item_video_link = get_video_link(current_item['links'], "href")
+    if "yt_channelid" in current_item:
+        # use "links" if this is a youtube-channel
+        if "links" in current_item:
+            item_video_link = get_video_link(current_item['links'], "href")
+    else:
+        if "media_content" in current_item:
+            item_video_link = get_video_link(current_item['media_content'], "url")
+        elif "links" in current_item:
+            item_video_link = get_video_link(current_item['links'], "href")
 
     if DEBUG:
         print("video link = " + str(item_video_link))
@@ -448,11 +411,10 @@ def fetch_and_play(feed):
         play(item_video_link)
 
     if DEBUG:
-        if not ytdl_backend:
-            print("published parsed = " + str(publish_date))
-            for item_property in current_item:
-                if DEBUG:
-                    print(str(item_property) + " = " + str(current_item[item_property]))
+        print("published parsed = " + str(publish_date))
+        for item_property in current_item:
+            if DEBUG:
+                print(str(item_property) + " = " + str(current_item[item_property]))
 
 
 def main():
