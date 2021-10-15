@@ -2,44 +2,95 @@
     "ts": {
         "url": "http://www.tagesschau.de/export/video-podcast/webxl/tagesschau/",
         "match": 0,
-        "match_type": "d"
+        "match_type": "d",
+        "name": "Tagesschau"
     },
-    "las": {
-        "url": "http://feeds.feedburner.com/computeractionshowvideo?format=xml",
-        "match": 1,
-        "match_type": "w"
+    "as": {
+        "url": "https://mediathekviewweb.de/feed?query=%2BAbendschau%20vom",
+        "match": 0,
+        "match_type": "d",
+        "name": "Abendschau"
+    },
+    "tt": {
+        "url": "http://www.tagesschau.de/export/video-podcast/webxl/tagesthemen/",
+        "match": 0,
+        "match_type": "d",
+        "name": "Tagesthemen"
     },
     "gf": {
         "url": "http://gnufunzt.de/gnufunzt_mp4.rss",
         "match": 3,
-        "match_type": "m"
+        "match_type": "m",
+        "name": "gnuFUNZT"
     },
     "nm": {
         "url": "https://www.zdf.de/rss/podcast/video/zdf/comedy/neo-magazin-mit-jan-boehmermann",
         "match": 1,
         "match_type": "w"
     },
-    "e3": {
-        "url": "http://www.ndr.de/fernsehen/sendungen/extra_3/video-podcast/index.xml",
+    "x3": {
+        "url": "https://mediathekviewweb.de/feed?query=%23extra%2C3%20%2BExtra%2C3",
         "match": 1,
-        "match_type": "w"
+        "match_type": "w",
+        "name": "extra3"
     },
     "nano": {
-        "url": "http://www.3sat.de/mediaplayer/rss/mediathek_nano.xml",
+        "url": "https://mediathekviewweb.de/feed?query=nano%20vom",
         "match": 1,
         "match_type": "w"
     },
     "ttt": {
-        "url": "http://mediathek.daserste.de/ttt-titel-thesen-temperamente/Sendung?documentId=447604&rss=true",
+        "url": "https://mediathekviewweb.de/feed?query=ttt%20%2BDie%20Sendung",
         "match": 1,
-        "match_type": "w"
+        "match_type": "w",
+        "name": "Titel Thesen Temperamente"
     },
-    "ld": {
-        "url": "https://www.youtube.com/user/BryanLunduke/videos",
-        "url_type": "yt"
+    "a": {
+        "url": "https://www.zdf.de/rss/podcast/video/zdf/comedy/die-anstalt",
+        "match": 1,
+        "match_type": "m",
+        "name": "Die Anstalt"
+    },
+    "k": {
+        "url": "https://mediathekviewweb.de/feed?query=!arte.de%20karambolage%20-%20&everywhere=true",
+        "match": 1,
+        "match_type": "w",
+        "name": "Karambolage"
     },
     "lwt": {
-        "url": "https://www.youtube.com/user/LastWeekTonight/videos",
-        "url_type": "yt"
+        "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC3XTzVzaHQEd30rQbuvCtTQ",
+        "name": "Last Week Tonight",
+        "match_type": "w",
+        "match": 1
+    },
+    "ed": {
+        "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCd1Xmm1TFBD-lfZUWaWf7EA",
+        "match_type": "d",
+        "match": 1,
+        "name": "Elite Dangerous"
+    },
+    "tmp": {
+        "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCbfYPyITQ-7l4upoX8nvctg",
+        "match_type": "d",
+        "match": 1,
+        "name": "Two minute papers"
+    },
+    "ltt": {
+        "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCXuqSBlHAE6Xw-yeJA0Tunw",
+        "name": "Linus Tech Tips",
+        "match_type": "d",
+        "match": 1
+    },
+    "sagi": {
+        "url": "https://podcast.sagittarius-eye.com/feed/sagi.xml",
+        "match": 1,
+        "match_type": "m"
+    },
+    "b": {
+        "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCWdOXab4Vup48wvCFG-ElNQ",
+        "name": "The Buur Pit",
+        "match_type": "w",
+        "match": 1
     }
 }
+
