@@ -44,7 +44,7 @@ def get_arguments():
     global CURL
 
     # parse commandline arguments
-    parser = argparse.ArgumentParser(description="weo-4: watch episode of")
+    parser = argparse.ArgumentParser(description="weo-5: watch episode of")
     parser.add_argument('-v', '--verbose', help='enable debugging', action='count')
     parser.add_argument('-l', '--list', help='list known feeds or episodes if FEED is given', action='store_true')
     parser.add_argument('-c', '--curl', help='download instead of playing (experimental)', action='store_true')
@@ -307,12 +307,14 @@ def list_feeds():
                     feed_duration = "-"
                 if DEBUG:
                     print("feed_duration = " + str(feed_duration))
+                if len(episode_title) > 60:
+                    episode_title = episode_title[0:60] + ".."
                 print("  " + str(i) + TAB + "   " + C_YELLOW \
                 + str(feed_duration) \
                 + C_CLEAR + TAB + "  " \
                 + str(episode_title))
                 i = i + 1
-                if i == 23:
+                if i == 15:
                     break
         except:
             print("there is a problem with the feed url.")
