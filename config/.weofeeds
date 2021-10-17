@@ -9,7 +9,14 @@
         "url": "https://mediathekviewweb.de/feed?query=%2BAbendschau%20vom",
         "match": 0,
         "match_type": "d",
-        "name": "Abendschau"
+        "name": "Abendschau, rss"
+    },
+    "asw": {
+        "url": "https://www.rbb-online.de/abendschau/videos/${yyyymmdd}_1930.html",
+        "url_type": "template",
+        "match": 0,
+        "match_type": "d",
+        "name": "Abendschau um 19:30, website"
     },
     "tt": {
         "url": "http://www.tagesschau.de/export/video-podcast/webxl/tagesthemen/",
@@ -78,7 +85,7 @@
     "ltt": {
         "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCXuqSBlHAE6Xw-yeJA0Tunw",
         "name": "Linus Tech Tips",
-        "match_type": "d",
+        "match_type": "w",
         "match": 1
     },
     "sagi": {
