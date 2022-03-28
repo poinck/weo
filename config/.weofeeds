@@ -1,6 +1,6 @@
 {
     "ts": {
-        "url": "http://www.tagesschau.de/export/video-podcast/webxl/tagesschau/",
+        "url": "https://www.tagesschau.de/export/video-podcast/webxl/tagesschau/",
         "match": 0,
         "match_type": "d",
         "name": "Tagesschau"

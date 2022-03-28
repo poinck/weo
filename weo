@@ -336,6 +336,8 @@ def list_feeds():
             try:
                 feed_parsed = feedparser.parse(feed_url)
                 # sort feed items to ensure we get the latest episode
+                if DEBUG:
+                    print(feed_parsed)
                 feed_sorted = sorted(
                     feed_parsed["items"],
                     key=lambda entry: entry["published_parsed"]
