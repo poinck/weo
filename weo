@@ -47,7 +47,7 @@ feeds_json = None
 def process_arguments():
     global DEBUG
 
-    parser = argparse.ArgumentParser(description="weo-6: watch episode of")
+    parser = argparse.ArgumentParser(description="weo-7: watch episode of")
     subparsers = parser.add_subparsers()
 
     parser.add_argument('-v', '--verbose', help='enable debugging', action='store_true', default=False)
