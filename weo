@@ -19,6 +19,8 @@ from datetime import date
 
 DEBUG = False
 LIST = False
+ADD_PARAMS = None
+DELETE = False
 CURL = False
 
 # defaults
@@ -34,46 +36,199 @@ C_BRED = '\x1b[1;31m'
 C_BPURPLE = '\x1b[1;35m'
 C_BWHITE = '\x1b[1;37m'
 C_YELLOW = '\x1b[33m'
+C_BLUE = '\033[94m'
+C_BLACK = '\033[30m'
 
 # other shell escapes
 TAB = "\t"
 
-def get_arguments():
+feeds_json = None
+
+def process_arguments():
     global DEBUG
-    global FEED
-    global CHITEM
-    global LIST
-    global CURL
 
-    # parse commandline arguments
     parser = argparse.ArgumentParser(description="weo-6: watch episode of")
-    parser.add_argument('-v', '--verbose', help='enable debugging', action='count')
-    parser.add_argument('-l', '--list', help='list known feeds or episodes if FEED is given', action='store_true')
-    parser.add_argument('-c', '--curl', help='download instead of playing (experimental)', action='store_true')
-    parser.add_argument('feed', metavar='FEED', help='feed shortcut', type=str, nargs='?')
-    parser.add_argument('item', metavar='EPISODE', help='last episode number (default: 0, newest)', type=int, nargs='?')
+    subparsers = parser.add_subparsers()
 
-    args = vars(parser.parse_args())
+    parser.add_argument('-v', '--verbose', help='enable debugging', action='store_true', default=False)
 
-    if args["verbose"] is not None:
-        if args["verbose"] > 0:
-            DEBUG = True
-    if args["list"] is not None:
-        if args["list"] > 0:
-            LIST = True
-    if args["curl"] is not None:
-        if args["curl"] > 0:
-            CURL = True
-    if args["feed"] is not None:
-        if DEBUG:
-            print("feed = " + str(args["feed"]))
-        FEED = args["feed"]
-    if args["item"] is not None:
-        if DEBUG:
-            print("item = " + str(args["item"]))
-        CHITEM = args["item"]
+    # weo play
+    play_parser = subparsers.add_parser('play', help='play feed or episode', aliases=['p'])
+    play_parser.add_argument('feed', help='feed shortcut')
+    play_parser.add_argument('item', help='last episode number (default: 0, newest)', type=int, default=0, nargs='?')
+    play_parser.add_argument('-p', '--print', dest="print_only", help='print only url of playing (experimental)', action='store_true')
+    play_parser.set_defaults(func=play_command)
+
+    # weo list
+    list_parser = subparsers.add_parser('list', help='list feeds or feed items', aliases=['l'])
+    list_parser.add_argument('feed', help='list episodes of this feed', nargs='?')
+    list_parser.set_defaults(func=list_command)
+
+    # weo delete
+    delete_parser = subparsers.add_parser('delete', help='delete feed', aliases=['d'])
+    delete_parser.add_argument('feed', help='feed to delete')
+    delete_parser.set_defaults(func=delete_command)
+
+    #weo add
+    add_parser = subparsers.add_parser('add', help='add feed', aliases=['a'])
+    add_parser.add_argument('feed', help='feed shortcut')
+    add_parser.add_argument('url', help='feed url')
+    add_parser.add_argument('-n', '--name', help='feed name', default="")
+    add_parser.add_argument('-m', '--match', help='match', type=int, default=1)
+    add_parser.add_argument('-t', '--match-type', help='match type', default="w")
+    add_parser.set_defaults(func=add_command)
+
+    # weo edit
+    edit_parser = subparsers.add_parser('edit', help='edit feed', aliases=['e'])
+    edit_parser.add_argument('feed', help='feed shortcut')
+    edit_parser.add_argument('url', help='feed url', nargs='?')
+    edit_parser.add_argument('-n', '--name', help='feed name')
+    edit_parser.add_argument('-m', '--match', help='match')
+    edit_parser.add_argument('-t', '--match-type', help='match type')
+    edit_parser.set_defaults(func=edit_command)
+
+
+    args = parser.parse_args()
+    variables = vars(args)
+
+    DEBUG = variables["verbose"]
+
+    # load config file and feeds json
+    get_config()
+    get_feeds()
+
+    args.func(args)
+    
+
+
+# Command Functions
+# check and destructure arguments before calling the appropriate function
+
+def play_command(args):
+    feed = args.feed
+    item = args.item
+    print_only = args.print_only
+
+    if feed_is_known_and_has_url(feed):
+        fetch_and_play(feed, item, print_only=print_only)
     else:
-        CHITEM = 0
+        print("" + feed + " is not known to weo")
+        sys.exit(2)
+    
+    
+def list_command(args):
+    feed = args.feed
+    if feed is not None:
+        if feed_is_known_and_has_url(feed):
+            list_feed(feed)
+        else:
+            print("" + feed + " is not known to weo. Here are all known feeds:")
+            list_all_feeds()
+            sys.exit(2)
+    else:
+       list_all_feeds()
+
+def add_command(args):
+    feed = args.feed
+    url = args.url
+    name = args.name
+    match_type = args.match_type
+    match = args.match
+
+    if feed in feeds_json:
+        print("feed already exists. Did you mean to edit?")
+        sys.exit(2)
+
+    if not is_valid_url(url):
+        print(f"invalid url {url}")
+        sys.exit(2)
+
+
+    set_feed(feed, url, name, match_type, match)
+    print(f"added feed {feed} to {HOME_DIR}/{FEED_FILE}")
+
+def edit_command(args):
+    feed = args.feed
+
+    if not feed_is_known(args.feed):
+        print("feed not known to weo. Did you mean to add?")
+        sys.exit(2)
+
+    existing_url = feeds_json[feed]["url"]
+    existing_name = feeds_json[feed]["name"]
+    existing_match_type = feeds_json[feed]["match_type"]
+    existing_match = feeds_json[feed]["match"]
+
+    # if only feed name is given, print usage with existing values
+    if args.name is None and args.url is None and args.match is None and args.match_type is None:
+        print(
+            f"weo edit: only feed name {feed} given.\n",
+            f"Supply values you want change change.\n",
+            f"usage: weo edit {feed} {existing_url} -n {existing_name} -m {existing_match} -t {existing_match_type}\n"
+        )
+        sys.exit(2)
+
+    url = args.url or existing_url
+    name = args.name or existing_name
+    match_type = args.match_type or existing_match_type
+    match = args.match or existing_match
+
+    set_feed(feed, url, name, match_type, match)
+    print(f"edited feed {feed} in  {HOME_DIR}/{FEED_FILE}")
+
+def delete_command(args):
+    delete_feed(args.feed)
+
+
+# A url must contain the protocol (i.e. https)
+# TODO: use "validators" package?
+def is_valid_url(url):
+    if url is None:
+        return False
+    if url.startswith("http://") or url.startswith("https://"):
+        return True
+    else:
+        return False
+
+def feed_is_known(feed):
+    return feed in feeds_json
+
+def feed_is_known_and_has_url(feed):
+    try:
+        return feeds_json[feed]["url"] is not None
+    except:
+        return False
+
+
+def set_feed(feed, url, name, match_type, match):
+
+    if feed is None:
+        print("please specify feed")
+        sys.exit(2)
+
+    if not is_valid_url(url):
+        print("invalid url")
+        sys.exit(2)
+    
+    feeds_json[feed] = {"url": url, "name": name, "match_type": match_type, "match": match}
+    write_feeds_file()
+
+    
+def write_feeds_file():
+    with open(HOME_DIR + "/" + FEED_FILE, 'w') as feeds_file:
+        json.dump(feeds_json, feeds_file, sort_keys=True, indent=4)
+
+
+def delete_feed(feed):
+    if DEBUG:
+        print("delete feed:", feed)
+
+    if feed in feeds_json:
+        del feeds_json[feed]
+        write_feeds_file()
+        print(f"deleted feed {feed} from {HOME_DIR}/{FEED_FILE}")
+    else:
+        print(f"Cannot delete feed {feed} because it does not exist")
 
 
 def get_config():
@@ -93,58 +248,42 @@ def get_config():
         + '", using defaults')
 
 
-feeds_json = None
-
 def get_feeds():
     global feeds_json
+    path = f"{HOME_DIR}/{FEED_FILE}"
 
     try:
-        with open(HOME_DIR + "/" + FEED_FILE) as json_file:
+        with open(path) as json_file:
             feeds_json = json.load(json_file)
     except:
-        print('please ensure that "~/' + FEED_FILE \
-        + '" is existing, readable and contains valid JSON.')
+        print(f'please ensure that "{path}" exists and is valid JSON')
         sys.exit(5)
 
     if feeds_json is not None:
         if DEBUG:
-            print("feeds json = " + str(feeds_json))
+            print("feeds json =", feeds_json)
     else:
-        print('"~/' + FEED_FILE + '" is empty or does not contain JSON')
+        print(f'"{path  }" is empty or or does not contain valid JSON')
 
-
+        
 def play(url):
     if DEBUG:
-        print("url = " + url)
+        print("url =", url)
 
     try:
-        if CURL == True:
-            if DEBUG:
-                curl_cmd = "curl -o " + FEED + ".mp4"
-                curl_cmd = curl_cmd.split(" ")
-                curl_cmd.append(url)
-                print("curl_cmd = " + str(curl_cmd))
-                subprocess.call(curl_cmd)
-            else:
-                subprocess.call(
-                    curl_cmd,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
+        play_cmd = PLAYER.split(" ")
+        play_cmd.append(url)
+        if DEBUG:
+            print("play_cmd =", str(play_cmd))
+            subprocess.call(play_cmd)
         else:
-            play_cmd = PLAYER.split(" ")
-            play_cmd.append(url)
-            if DEBUG:
-                print("play_cmd = " + str(play_cmd))
-                subprocess.call(play_cmd)
-            else:
-                subprocess.call(
-                    play_cmd,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
+            subprocess.call(
+                play_cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
     except:
-        print('could not use "' + PLAYER  + '" to play episode')
+        print(f'could not use "{PLAYER}" to play episode')
 
 
 def get_video_link(enclosure, link_type):
@@ -240,134 +379,114 @@ def is_matching(feed, current_item):
                 matching = True
 
     else:
-        print("match_type '" + match_type + "' not implemented")
+        print(f"match_type '{match_type}' not implemented")
         sys.exit(5)
 
     return matching
 
-
-def is_existing_feed(feed):
-    existing = False
+def list_feed(feed):
+       # list titles of feed episodes
+    try:
+        feed_name = feeds_json[feed]["name"]
+        feed_name = f"({feed_name}) "
+    except:
+        feed_name = ""
 
     try:
-        feed_url = feeds_json[feed]["url"]
-        existing = True
+        feed_url_type = feeds_json[feed]["url_type"]
     except:
-        if feed is not None:
-            print("" + feed + " is not known to weo")
-        else:
-            print('please specify a feed shortcut that is known to weo')
+        feed_url_type = ""
 
-    if existing is False:
-        list_feeds()
+    col = C_BWHITE
+    if feed_url_type == "template":
+        col = C_BPURPLE
+    try:
+        feed_url = feeds_json[feed]["url"]
+        if DEBUG:
+            print("feed_url = " + feed_url)
+        print(col + feed + C_CLEAR + " " + feed_name \
+        + "has following episodes:")
+    except:
+        print(f"no url for {feed}.")
+        sys.exit(4)
 
-    return existing
+    if feed_url_type == "template":
+        # template
+        print("EPISODE  minutes  date")
+        url_template = Template(feed_url)
+        match_type = "d"
 
-
-def list_feeds():
-    if FEED is None:
-        print('following feeds are configured in "~/' + FEED_FILE + '":')
-        for current_feed in feeds_json:
-            try:
-                feed_name = feeds_json[current_feed]["name"]
-            except:
-                feed_name = ""
-            try:
-                feed_url_type = feeds_json[current_feed]["url_type"]
-            except:
-                feed_url_type = ""
-            col = C_BWHITE
-            if feed_url_type == "template":
-                col = C_BPURPLE
-            if feed_name == "":
-                print("  " + col + str(current_feed) + C_CLEAR)
-            else:
-                print("  " + col + str(current_feed) + C_CLEAR + TAB + "  " \
-                + str(feed_name))
-    else:
-        # list titles of feed episodes
         try:
-            feed_name = feeds_json[FEED]["name"]
-            feed_name = "(" + feed_name + ") "
+            match_type = feeds_json[feed]["match_type"]
+        except:
+            if DEBUG:
+                print("no match_type, using default, daily (d).")
+
+        if match_type == "d":
+            start_date = date.today()
+            for i in range(0, 14):
+                next_date = start_date - datetime.timedelta(days = i)
+                episode_title = str(next_date)
+                print("  " + str(i) + TAB + "   " + C_YELLOW \
+                + "-" \
+                + C_CLEAR + TAB + "  " \
+                + str(episode_title))
+        else:
+            print("for templates currently only daily match_type is supported; please adjust your ~/.weofeeds")
+
+    else:
+        # rss
+        print("EPISODE  minutes  name")
+        try:
+            feed_parsed = feedparser.parse(feed_url)
+            # sort feed items to ensure we get the latest episode
+            feed_sorted = sorted(
+                feed_parsed["items"],
+                key=lambda entry: entry["published_parsed"],
+                reverse=True
+            )
+            for i, feed_item in enumerate(feed_sorted[:15]):
+                if DEBUG:
+                    print("feed_item = " + str(feed_item))
+                episode_title = feed_item["title"]
+                try:
+                    feed_duration = feed_item["duration"]
+                    feed_duration = int(int(feed_duration) / 60)
+                except:
+                    feed_duration = "-"
+                if DEBUG:
+                    print("feed_duration = " + str(feed_duration))
+                if len(episode_title) > 60:
+                    episode_title = episode_title[0:60] + ".."
+                print(f"  {i}{TAB}   {C_YELLOW}{feed_duration}{C_CLEAR}  {episode_title}")
+        except:
+            print("could not parse RSS for " + feed + ".")
+            sys.exit(5)
+
+
+def list_all_feeds():
+    print('following feeds are configured in "~/' + FEED_FILE + '":')
+    for current_feed in feeds_json:
+        try:
+            feed_name = feeds_json[current_feed]["name"]
         except:
             feed_name = ""
         try:
-            feed_url_type = feeds_json[FEED]["url_type"]
+            feed_url_type = feeds_json[current_feed]["url_type"]
         except:
             feed_url_type = ""
+
         col = C_BWHITE
         if feed_url_type == "template":
             col = C_BPURPLE
-        try:
-            feed_url = feeds_json[FEED]["url"]
-            if DEBUG:
-                print("feed_url = " + feed_url)
-            print(col + FEED + C_CLEAR + " " + feed_name \
-            + "has following episodes:")
-        except:
-            print("no url for " + FEED + ".")
-            sys.exit(4)
-
-        if feed_url_type == "template":
-            # template
-            print("EPISODE  minutes  date")
-            url_template = Template(feed_url)
-            match_type = "d"
-            try:
-                match_type = feeds_json[FEED]["match_type"]
-            except:
-                if DEBUG:
-                    print("no match_type, using default, daily (d).")
-            if match_type == "d":
-                start_date = date.today()
-                for i in range(0, 14):
-                    next_date = start_date - datetime.timedelta(days = i)
-                    episode_title = str(next_date)
-                    print("  " + str(i) + TAB + "   " + C_YELLOW \
-                    + "-" \
-                    + C_CLEAR + TAB + "  " \
-                    + str(episode_title))
-            else:
-                print("for templates currently only daily match_type is supported; please adjust your ~/.weofeeds")
-
+        if feed_name == "":
+            print("  " + col + str(current_feed) + C_CLEAR)
         else:
-            # rss
-            print("EPISODE  minutes  name")
-            try:
-                feed_parsed = feedparser.parse(feed_url)
-                # sort feed items to ensure we get the latest episode
-                feed_sorted = sorted(
-                    feed_parsed["items"],
-                    key=lambda entry: entry["published_parsed"]
-                )
-                feed_sorted.reverse()
-                i = 0
-                for feed_item in feed_sorted:
-                    if DEBUG:
-                        print("feed_item = " + str(feed_item))
-                    episode_title = feed_sorted[i]["title"]
-                    try:
-                        feed_duration = feed_sorted[i]["duration"]
-                        feed_duration = int(int(feed_duration) / 60)
-                    except:
-                        feed_duration = "-"
-                    if DEBUG:
-                        print("feed_duration = " + str(feed_duration))
-                    if len(episode_title) > 60:
-                        episode_title = episode_title[0:60] + ".."
-                    print("  " + str(i) + TAB + "   " + C_YELLOW \
-                    + str(feed_duration) \
-                    + C_CLEAR + TAB + "  " \
-                    + str(episode_title))
-                    i = i + 1
-                    if i == 15:
-                        break
-            except:
-                print("could not parse RSS for " + FEED + ".")
-                sys.exit(5)
+            print("  " + col + str(current_feed) + C_CLEAR + TAB + "  " \
+            + str(feed_name))
 
 
-def fetch_and_play(feed):
+def fetch_and_play(feed, item = 0, print_only = False):
     play_now = False
     expected_date = datetime.datetime.today()
 
@@ -378,7 +497,7 @@ def fetch_and_play(feed):
         feed_url_type = ""
 
     if DEBUG:
-        print("CHITEM = " + str(CHITEM))
+        print(f'item = {item}')
 
     if feed_url_type == "template":
         # template
@@ -394,9 +513,9 @@ def fetch_and_play(feed):
                 print("no match_type, using default, daily (d).")
         if match_type == "d":
             start_date = date.today()
-            next_date = start_date - datetime.timedelta(days = CHITEM)
+            next_date = start_date - datetime.timedelta(days = item)
             play_date = next_date.strftime("%Y%m%d")
-            print("playing episode " + str(CHITEM) \
+            print("playing episode " + str(item) \
             + " of " \
             + C_BPURPLE + str(feed) + C_CLEAR + " from " \
             + str(next_date) + " now ..")
@@ -416,35 +535,28 @@ def fetch_and_play(feed):
         # sort feed items to ensure we get the latest episode
         feed_sorted = sorted(
             feed_parsed["items"],
-            key=lambda entry: entry["published_parsed"]
+            key=lambda entry: entry["published_parsed"],
+            reverse=True
         )
-        feed_sorted.reverse()
-        current_item = feed_sorted[int(CHITEM)]
+        current_item = feed_sorted[item]
         publish_date = current_item['published_parsed']
-        episode_title = feed_sorted[int(CHITEM)]["title"]
+        episode_title = feed_sorted[item]["title"]
         episode_title = " (" + episode_title + ") "
 
         # check wether last episode is within specified time frame
         if is_matching(feed, current_item):
-            print("last episode" + episode_title \
-            + "of " + C_BWHITE + str(feed) + C_CLEAR \
-            + " is current, playing now ..")
+            print(f"last episode {episode_title} of {C_BWHITE}{feed}{C_CLEAR} is current, playing now ..")
             play_now = True
         else:
-            if int(CHITEM) > 0:
-                print("playing episode " + str(CHITEM) \
-                + episode_title + "of " \
-                + C_BWHITE + str(feed) + C_CLEAR + " from " \
-                + str(publish_date.tm_year) \
-                + "-" + str(publish_date.tm_mon) + "-" \
-                + str(publish_date.tm_mday) + " now ..")
+            publish_date_str = f"{publish_date.tm_year}\-{publish_date.tm_mon}-{publish_date.tm_mday}"
+            if item > 0:
+                print(
+                    f"playing episode {C_BWHITE}{item}{C_CLEAR} of {C_BWHITE}{feed}{C_CLEAR}"
+                    f" from {publish_date_str}"
+                )
                 play_now = True
             else:
-                print("last episode of " + C_BWHITE + str(feed) + C_CLEAR \
-                + " is from " \
-                + str(publish_date.tm_year) \
-                + "-" + str(publish_date.tm_mon) + "-" \
-                + str(publish_date.tm_mday))
+                print(f"last episode of {C_BWHITE}{feed}{C_CLEAR} is from {publish_date_str}")
 
         item_video_link = None
 
@@ -493,21 +605,16 @@ def fetch_and_play(feed):
                     + str(current_item[item_property]))
 
     if play_now:
-        play(item_video_link)
+        if print_only:
+            print(item_video_link)
+        else:
+            play(item_video_link)
 
 
 def main():
-    get_arguments()
+    process_arguments()
     if DEBUG:
         print("debug enabled")
-    get_config()
-    get_feeds()
 
-    if LIST:
-        list_feeds()
-    elif is_existing_feed(FEED):
-        fetch_and_play(FEED)
-
-
-main()
-
+if __name__ == "__main__":
+    main()
