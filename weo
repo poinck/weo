@@ -47,27 +47,35 @@ feeds_json = None
 def process_arguments():
     global DEBUG
 
-    parser = argparse.ArgumentParser(description="weo-7: watch episode of")
+    parser = argparse.ArgumentParser(description = "weo-7: watch episode of")
     subparsers = parser.add_subparsers()
 
-    parser.add_argument('-v', '--verbose', help='enable debugging', action='store_true', default=False)
+    parser.add_argument("-v", "--verbose", help = "enable debugging",
+        action = "store_true", default = False)
 
     # weo play
-    play_parser = subparsers.add_parser('play', help='play feed or episode', aliases=['p'])
-    play_parser.add_argument('feed', help='feed shortcut')
-    play_parser.add_argument('item', help='last episode number (default: 0, newest)', type=int, default=0, nargs='?')
-    play_parser.add_argument('-p', '--print', dest="print_only", help='print only url of playing (experimental)', action='store_true')
-    play_parser.set_defaults(func=play_command)
+    play_parser = subparsers.add_parser("play", help = "play feed or episode",
+        aliases=["p"])
+    play_parser.add_argument("feed", help = "feed shortcut")
+    play_parser.add_argument("item",
+        help = "last episode number (default: 0, newest)", type = int,
+        default = 0, nargs = "?")
+    play_parser.add_argument("-p", "--print", dest="print_only",
+        help = "print only url of playing (experimental)", action = "store_true")
+    play_parser.set_defaults(func = play_command)
 
     # weo list
-    list_parser = subparsers.add_parser('list', help='list feeds or feed items', aliases=['l'])
-    list_parser.add_argument('feed', help='list episodes of this feed', nargs='?')
-    list_parser.set_defaults(func=list_command)
+    list_parser = subparsers.add_parser("list", help = "list feeds or feed items",
+        aliases = ["l"])
+    list_parser.add_argument("feed", help = "list episodes of this feed",
+        nargs = "?")
+    list_parser.set_defaults(func = list_command)
 
     # weo delete
-    delete_parser = subparsers.add_parser('delete', help='delete feed', aliases=['d'])
-    delete_parser.add_argument('feed', help='feed to delete')
-    delete_parser.set_defaults(func=delete_command)
+    delete_parser = subparsers.add_parser("delete",
+        help = "delete feed", aliases=["d"])
+    delete_parser.add_argument("feed", help = "feed to delete")
+    delete_parser.set_defaults(func = delete_command)
 
     #weo add
     add_parser = subparsers.add_parser('add', help='add feed', aliases=['a'])
@@ -85,25 +93,30 @@ def process_arguments():
     edit_parser.add_argument('-n', '--name', help='feed name')
     edit_parser.add_argument('-m', '--match', help='match')
     edit_parser.add_argument('-t', '--match-type', help='match type')
-    edit_parser.set_defaults(func=edit_command)
-
+    edit_parser.set_defaults(func = edit_command)
 
     args = parser.parse_args()
     variables = vars(args)
 
     DEBUG = variables["verbose"]
+    if DEBUG:
+        print("variables = " + str(variables))
+        print("args = " + str(args))
+
+    #print("variables = " + str(variables))
 
     # load config file and feeds json
     get_config()
     get_feeds()
 
-    args.func(args)
-    
+    # list all configured feeds if no arguments are given
+    if "func" in args:
+        args.func(args)
+    else:
+        list_all_feeds()
 
 
-# Command Functions
 # check and destructure arguments before calling the appropriate function
-
 def play_command(args):
     feed = args.feed
     item = args.item
@@ -114,8 +127,8 @@ def play_command(args):
     else:
         print("" + feed + " is not known to weo")
         sys.exit(2)
-    
-    
+
+
 def list_command(args):
     feed = args.feed
     if feed is not None:
@@ -133,7 +146,7 @@ def add_command(args):
     url = args.url
     name = args.name
     match_type = args.match_type
-    match = args.match
+    match = int(args.match)
 
     if feed in feeds_json:
         print("feed already exists. Did you mean to edit?")
@@ -162,25 +175,30 @@ def edit_command(args):
     # if only feed name is given, print usage with existing values
     if args.name is None and args.url is None and args.match is None and args.match_type is None:
         print(
-            f"weo edit: only feed name {feed} given.\n",
-            f"Supply values you want change change.\n",
             f"usage: weo edit {feed} {existing_url} -n {existing_name} -m {existing_match} -t {existing_match_type}\n"
+            f"weo edit: only feed name {feed} given.",
+            f"supply values you want change change.\n",
         )
         sys.exit(2)
+
+    if DEBUG:
+        #print("match = " + match)
+        print("existing_match = " + str(existing_match))
 
     url = args.url or existing_url
     name = args.name or existing_name
     match_type = args.match_type or existing_match_type
     match = args.match or existing_match
 
-    set_feed(feed, url, name, match_type, match)
-    print(f"edited feed {feed} in  {HOME_DIR}/{FEED_FILE}")
+    set_feed(feed, url, name, match_type, int(match))
+    print(f"edited feed {feed} in {HOME_DIR}/{FEED_FILE}")
+
 
 def delete_command(args):
     delete_feed(args.feed)
 
 
-# A url must contain the protocol (i.e. https)
+# a url must contain the protocol (i.e. https)
 # TODO: use "validators" package?
 def is_valid_url(url):
     if url is None:
@@ -190,8 +208,10 @@ def is_valid_url(url):
     else:
         return False
 
+
 def feed_is_known(feed):
     return feed in feeds_json
+
 
 def feed_is_known_and_has_url(feed):
     try:
@@ -201,7 +221,6 @@ def feed_is_known_and_has_url(feed):
 
 
 def set_feed(feed, url, name, match_type, match):
-
     if feed is None:
         print("please specify feed")
         sys.exit(2)
@@ -209,11 +228,11 @@ def set_feed(feed, url, name, match_type, match):
     if not is_valid_url(url):
         print("invalid url")
         sys.exit(2)
-    
+
     feeds_json[feed] = {"url": url, "name": name, "match_type": match_type, "match": match}
     write_feeds_file()
 
-    
+
 def write_feeds_file():
     with open(HOME_DIR + "/" + FEED_FILE, 'w') as feeds_file:
         json.dump(feeds_json, feeds_file, sort_keys=True, indent=4)
@@ -265,7 +284,7 @@ def get_feeds():
     else:
         print(f'"{path  }" is empty or or does not contain valid JSON')
 
-        
+
 def play(url):
     if DEBUG:
         print("url =", url)
@@ -551,7 +570,7 @@ def fetch_and_play(feed, item = 0, print_only = False):
             print(f"last episode {episode_title} of {C_BWHITE}{feed}{C_CLEAR} is current, playing now ..")
             play_now = True
         else:
-            publish_date_str = f"{publish_date.tm_year}\-{publish_date.tm_mon}-{publish_date.tm_mday}"
+            publish_date_str = time.strftime("%Y-%m-%d", publish_date)
             if item > 0:
                 print(
                     f"playing episode {C_BWHITE}{item}{C_CLEAR} of {C_BWHITE}{feed}{C_CLEAR}"

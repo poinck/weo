@@ -3,9 +3,9 @@
 **watch episode of:**
 `weo` is a very simple video-podcast-script to watch the last episode of a RSS-feed with video-content using *`mpv`*.
 
-*New (2021): List episodes of a feed, configure custom names and url_templates if your local news provide cannot provide current RSS feeds. See 'Usage'.*
+*New (2022): Usage signature has changed, due to a nearly complete rewrite. You can now add, edit and delete feeds from weo itself, although 'template_urls' are not supported yet.*
 
-*Attention: Direct YT-Channel support is depricated now. Get RSS-Feed of YT-Channels instead.*
+*Attention: Direct YT-Channel support is depricated since version 6. Get RSS-Feed of YT-Channels instead.*
 
 
 ## Dependencies
@@ -30,7 +30,7 @@ player=mplayer
 
 ## Usage
 
-- edit (or create if not already done) "`~/.weofeeds`" with your favourite editor; this is the format:
+- edit (or create if not already done) "`~/.weofeeds`" with your favourite editor; this is the format. You can also use built-in **add**, **edit** and **delete** functions.
 
 ```.json
 {
@@ -69,23 +69,22 @@ playing ..
 
 # getting help
 $ weo -h
-usage: weo [-h] [-v] [-l] [-c] [FEED] [EPISODE]
+usage: weo [-h] [-v] {play,p,list,l,delete,d,add,a,edit,e} ...
 
-weo-4: watch episode of
+weo-7: watch episode of
 
 positional arguments:
-  FEED           feed shortcut
-  EPISODE        last episode number (default: 0, newest)
+  {play,p,list,l,delete,d,add,a,edit,e}
+    play (p)            play feed or episode
+    list (l)            list feeds or feed items
+    delete (d)          delete feed
+    add (a)             add feed
+    edit (e)            edit feed
 
 optional arguments:
-  -h, --help     show this help message and exit
-  -v, --verbose  enable debugging
-  -l, --list     list known feeds or episodes if FEED is given
-  -c, --curl     download instead of playing (experimental)
+  -h, --help            show this help message and exit
+  -v, --verbose         enable debugging
 ```
-
-*A future version of "weo" will never enable you adding podcast-feeds without editing the JSON-formatted feeds-file. But you can fork this and make it happen.*
-
 
 ## License
 
